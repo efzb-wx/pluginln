@@ -1,0 +1,18 @@
+#!name = 牛蛙助手 Body采集与定时任务
+#!desc = 始终采集task/list请求Body到niuwabody；按开关和Cron发送gromoreplay请求，解密并通知addesc。
+#!author = Local
+#!loon_version = 3.5.1(983)
+#!date = 2026-11-11
+
+[Argument]
+sign_enable = switch,true,false,tag=[牛蛙助手]每日签到,desc=是否开启每日自动签到
+sign_cron   = input,"0 10 * * *",tag=[牛蛙助手]定时参数Cron,desc=签到任务的 Cron 表达式
+
+[Script]
+# 第一部分：截获 body 数据（不受签到开关影响）
+request if ${url} ~= /^https:\/\/api\.ios222\.com\/task\/list(?:\?[^#]*)?$/ then script("capture_body.js") with requires_body=true, timeout=10, tag="牛蛙助手Body采集"
+# 第二部分：定时签到（受开关 + Cron 控制）
+cron ${sign_cron} then script("niuwa_sign.js", {${sign_enable}}) with enable=${sign_enable}, timeout=35, tag="牛蛙助手每日签到"
+
+[Mitm]
+hostname = api.ios222.com
