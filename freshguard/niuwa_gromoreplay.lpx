@@ -13,7 +13,7 @@ sign_cron   = input,"0 10 * * *",tag=[牛蛙助手]定时参数Cron,desc=签到�
 request if ${url} ~= /^https:\/\/api\.ios222\.com\/task\/list(?:\?[^#]*)?$/ then script("https://raw.githubusercontent.com/efzb-wx/pluginln/refs/heads/main/freshguard/capture_body.js") with requires_body=true, timeout=10, tag="牛蛙助手Body采集"
 # 第二部分：定时签到（受开关 + Cron 控制）
 cron ${sign_cron} then script("https://raw.githubusercontent.com/efzb-wx/pluginln/refs/heads/main/freshguard/niuwa_sign.js", {${sign_enable}}) with enable=${sign_enable}, timeout=35, tag="牛蛙助手每日签到"
-# 手动执行入口（不受Cron时间限制，脚本内部仍检查签到开关）
+# 手动签到按钮
 generic then script("https://raw.githubusercontent.com/efzb-wx/pluginln/refs/heads/main/freshguard/niuwa_sign.js", {${sign_enable}}) with tag="牛蛙助手手动签到", timeout=35
 
 [Mitm]
