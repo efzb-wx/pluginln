@@ -10,9 +10,9 @@ sign_cron   = input,"0 10 * * *",tag=[牛蛙助手]定时参数Cron,desc=签到�
 
 [Script]
 # 第一部分：截获 body 数据（不受签到开关影响）
-request if ${url} ~= /^https:\/\/api\.ios222\.com\/task\/list(?:\?[^#]*)?$/ then script("capture_body.js") with requires_body=true, timeout=10, tag="牛蛙助手Body采集"
+request if ${url} ~= /^https:\/\/api\.ios222\.com\/task\/list(?:\?[^#]*)?$/ then script("https://raw.githubusercontent.com/efzb-wx/pluginln/refs/heads/main/freshguard/capture_body.js") with requires_body=true, timeout=10, tag="牛蛙助手Body采集"
 # 第二部分：定时签到（受开关 + Cron 控制）
-cron ${sign_cron} then script("niuwa_sign.js", {${sign_enable}}) with enable=${sign_enable}, timeout=35, tag="牛蛙助手每日签到"
+cron ${sign_cron} then script("https://raw.githubusercontent.com/efzb-wx/pluginln/refs/heads/main/freshguard/niuwa_sign.js", {${sign_enable}}) with enable=${sign_enable}, timeout=35, tag="牛蛙助手每日签到"
 
 [Mitm]
 hostname = api.ios222.com
