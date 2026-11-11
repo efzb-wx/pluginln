@@ -4,8 +4,8 @@
 #!date = 2026-11-11
 
 [Script]
-http-request ^https:\/\/api\.ios222\.com\/device\/login(?:\?[^#]*)?$ script-path=freshguard_login.js, requires-body=true, timeout=10, tag=FreshGuard登录请求
-http-response ^https:\/\/api\.ios222\.com\/device\/login(?:\?[^#]*)?$ script-path=freshguard_login.js, requires-body=true, timeout=10, tag=FreshGuard登录响应
+http-request ^https:\/\/api\.ios222\.com\/device\/login(?:\?[^#]*)?$ script-path=https://raw.githubusercontent.com/efzb-wx/pluginln/refs/heads/main/freshguard_login.js requires-body=true, timeout=10, tag=FreshGuard登录请求
+http-response ^https:\/\/api\.ios222\.com\/device\/login(?:\?[^#]*)?$ script-path=https://raw.githubusercontent.com/efzb-wx/pluginln/refs/heads/main/freshguard_login.js, requires-body=true, timeout=10, tag=FreshGuard登录响应
 
 [Mitm]
 hostname = api.ios222.com
