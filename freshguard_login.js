@@ -13,7 +13,7 @@ var NF_REPLACEMENT = {
     "addesc": "观看广告可开通普通会员，每次领取时长为3天",
     "ba_update_desc": "修复appleid无法正常签名的bug，修复iPhone17无法定位，优化定位时长",
     "piv_servicetimeinterval": 0,
-    "points": 200,
+    "points": 439,
     "gsacodes": [
       3840
     ],
