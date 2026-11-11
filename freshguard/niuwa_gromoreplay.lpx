@@ -1,6 +1,6 @@
 #!name = 牛蛙助手 Body采集与定时任务
-#!desc = 始终采集task/list请求Body到niuwabody；按开关和Cron发送gromoreplay请求，解密并通知addesc。
-#!author = Local
+#!desc = 打开牛蛙助手后再打开loon开关，然后打开牛蛙助手工具箱中的人物中心获取信息，可以在本插件设置中手动或者自动执行每日签到
+#!author = efzb
 #!loon_version = 3.5.1(983)
 #!date = 2026-11-11
 
