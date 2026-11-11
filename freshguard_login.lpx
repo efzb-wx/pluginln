@@ -1,0 +1,11 @@
+#!name = FreshGuard 5.1.0 登录响应替换
+#!desc = 读取对应请求整数，将指定JSON按AES-256-GCM加密后替换登录响应。需同时导入同目录JS脚本并启用MitM。
+#!author = Local
+#!date = 2026-11-11
+
+[Script]
+http-request ^https:\/\/api\.ios222\.com\/device\/login(?:\?[^#]*)?$ script-path=freshguard_login.js, requires-body=true, timeout=10, tag=FreshGuard登录请求
+http-response ^https:\/\/api\.ios222\.com\/device\/login(?:\?[^#]*)?$ script-path=freshguard_login.js, requires-body=true, timeout=10, tag=FreshGuard登录响应
+
+[Mitm]
+hostname = api.ios222.com
