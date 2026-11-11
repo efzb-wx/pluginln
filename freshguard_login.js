@@ -1,5 +1,5 @@
 /* FreshGuard 5.1.0 login response replacement for Loon.
- * Local body transformation only; no auxiliary network calls.
+ * Request-stage local response; skips the upstream login request.
  * SJCL 1.0.8 (BSD/GPL alternative), js-md5 v0.8.3 distribution (MIT).
  * Upstream sources: github.com/bitwiseshiftleft/sjcl and github.com/emn178/js-md5.
  * Preserve this private file locally: replacement includes a device pair record.
@@ -13,7 +13,7 @@ var NF_REPLACEMENT = {
     "addesc": "观看广告可开通普通会员，每次领取时长为3天",
     "ba_update_desc": "修复appleid无法正常签名的bug，修复iPhone17无法定位，优化定位时长",
     "piv_servicetimeinterval": 0,
-    "points": 439,
+    "points": 200,
     "gsacodes": [
       3840
     ],
@@ -247,39 +247,31 @@ return { sjcl: sjcl, md5: window.md5 };
       return;
     }
 
-    // Loon exposes the matching request in both request and response scripts.
-    // Read that request directly: no global "last request" value, no injected
-    // headers and no cross-session store that could mix simultaneous logins.
-    var requestBody = parseBody($request.body);
-    if (typeof $response === 'undefined' || $response === null) {
-      console.log('[FreshGuard login] request body integer parsed; request unchanged');
+    // Only run at the request stage. A stale response rule is a no-op.
+    if (typeof $response !== 'undefined' && $response !== null) {
       $done({});
       return;
     }
-
-    var status = Number($response.status || $response.statusCode || 0);
-    if (status < 200 || status >= 300) throw new Error('Upstream returned non-2xx status; preserving response');
-    var originalResponse = parseBody($response.body);
-    // Authenticate the original response using this exact request before editing.
-    JSON.parse(decryptBody($response.body, requestBody.number));
+    var requestBody = parseBody($request.body);
+    JSON.parse(decryptBody($request.body, 0));
+    var responseInteger = Math.floor(Date.now() / 1000) + 100000000 +
+      Math.floor(Math.random() * 100000000);
     var plain = JSON.stringify(NF_REPLACEMENT);
-    var encrypted = encryptBody(plain, originalResponse.number, requestBody.number);
-    // Keep status and unrelated headers. Remove stale representation metadata.
-    var headers = {};
-    Object.keys($response.headers || {}).forEach(function (name) {
-      if (!/^(?:content-length|content-encoding|transfer-encoding|content-md5|digest|etag)$/i.test(name)) {
-        headers[name] = $response.headers[name];
-      }
-    });
-    Object.keys(headers).forEach(function (name) {
-      if (/^content-type$/i.test(name)) delete headers[name];
-    });
-    headers['Content-Type'] = 'application/json; charset=utf-8';
-    console.log('[FreshGuard login] response authenticated and replaced; bytes=' + encrypted.length);
-    $done({ headers: headers, body: encrypted });
+    var encrypted = encryptBody(plain, responseInteger, requestBody.number);
+    console.log('[FreshGuard login] local response generated; bytes=' + encrypted.length);
+    // The request-stage response object bypasses the upstream request.
+    $done({ response: {
+      status: 200,
+      headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+      body: encrypted
+    } });
   } catch (error) {
-    // Never send a partial body or guess a request integer.
-    console.log('[FreshGuard login] unchanged: ' + String(error && error.message || error));
-    $done({});
+    // Keep malformed matching requests local, too.
+    console.log('[FreshGuard login] local error: ' + String(error && error.message || error));
+    $done({ response: {
+      status: 400,
+      headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+      body: JSON.stringify({ error: 'LOCAL_LOGIN_BODY_INVALID', message: 'Cannot authenticate or process the request body' })
+    } });
   }
 }());
