@@ -133,6 +133,8 @@ return {parseBody:parseBody, decryptBody:decryptBody};
 /* 第二部分：定时签到，受 sign_enable 和插件 Cron 控制。 */
 (function () {
   'use strict';
+  var TOTAL_REQUESTS = 10;
+  var INTERVAL_MS = 10000;
   var finished = false;
   function finish() {
     if (!finished) { finished = true; $done(); }
@@ -175,7 +177,45 @@ return {parseBody:parseBody, decryptBody:decryptBody};
     var requestInteger = NIUWA_CODEC.parseBody(body).number;
     // Check the stored body locally; send its original bytes without regenerating it.
     JSON.parse(NIUWA_CODEC.decryptBody(body, 0));
-    $httpClient.post({
+    var sent = 0;
+    function scheduleNext() {
+      if (sent >= TOTAL_REQUESTS) {
+        console.log('[牛蛙助手] 本轮已发送' + sent + '次，任务结束');
+        finish();
+      } else {
+        setTimeout(sendNext, INTERVAL_MS);
+      }
+    }
+    function sendNext() {
+      if (finished) return;
+      var index = ++sent;
+      var settled = false;
+      function handleResponse(error, response, data) {
+        if (finished || settled) return;
+        settled = true;
+        var progress = '（' + index + '/' + TOTAL_REQUESTS + '）';
+        try {
+          if (error) throw new Error('网络请求失败：' + String(error));
+          var status = Number(response && (response.status || response.statusCode) || 0);
+          if (status < 200 || status >= 300) throw new Error('服务器返回HTTP ' + status);
+          var json = JSON.parse(NIUWA_CODEC.decryptBody(data, requestInteger));
+          var result = json && json.body;
+          if (result && typeof result.addesc === 'string' && result.addesc.length) {
+            notify('定时任务结果' + progress, result.addesc);
+          } else {
+            var message = result && typeof result.desc === 'string' ? result.desc :
+              (json && typeof json.pub_desc === 'string' ? json.pub_desc : '响应没有body.addesc字段');
+            notify('响应未包含addesc' + progress, message);
+          }
+          console.log('[牛蛙助手] 第' + index + '次响应解密及GCM校验通过；pub_code=' + String(json.pub_code));
+        } catch (failure) {
+          notify('定时任务失败' + progress, String(failure && failure.message || failure));
+        } finally {
+          scheduleNext();
+        }
+      }
+      try {
+        $httpClient.post({
       url: 'https://api.ios222.com/device/gromoreplay',
       timeout: 20000,
       'auto-redirect': false,
@@ -190,28 +230,12 @@ return {parseBody:parseBody, decryptBody:decryptBody};
         'Accept-Encoding': 'gzip, deflate, br'
       },
       body: body
-    }, function (error, response, data) {
-      if (finished) return;
-      try {
-        if (error) throw new Error('网络请求失败：' + String(error));
-        var status = Number(response && (response.status || response.statusCode) || 0);
-        if (status < 200 || status >= 300) throw new Error('服务器返回HTTP ' + status);
-        var json = JSON.parse(NIUWA_CODEC.decryptBody(data, requestInteger));
-        var result = json && json.body;
-        if (result && typeof result.addesc === 'string' && result.addesc.length) {
-          notify('定时任务结果', result.addesc);
-        } else {
-          var message = result && typeof result.desc === 'string' ? result.desc :
-            (typeof json.pub_desc === 'string' ? json.pub_desc : '响应没有body.addesc字段');
-          notify('响应未包含addesc', message);
-        }
-        console.log('[牛蛙助手] 响应解密及GCM校验通过；pub_code=' + String(json.pub_code));
-      } catch (failure) {
-        notify('定时任务失败', String(failure && failure.message || failure));
-      } finally {
-        finish();
+        }, handleResponse);
+      } catch (transportError) {
+        handleResponse(transportError, null, null);
       }
-    });
+    }
+    sendNext();
   } catch (error) {
     notify('定时任务失败', String(error && error.message || error));
     finish();
